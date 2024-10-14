@@ -13,31 +13,58 @@ const allSocketServer =
         }
     });
 
-// Обработка подключения клиента
+                    // Обработка подключения клиента
 allSocketServer.on("connection",
     (oneUserSocket) => {
         //allSocketServer.emit('new_user_connection', {socket_id: oneUserSocket.id})
         console.log(`User connected: ${oneUserSocket.id}`);
-        // Створити імя
-       // oneUserSocket.name = oneUserSocket.id;
 
-        // const newUser = {
-        //     name: oneUserSocket.name,
-        //     connectedAt: Date.now()
-        // }
-        //
+                    // Створити імя
+       oneUserSocket.name = oneUserSocket.id;
+
+        const newUser = {
+            name: oneUserSocket.name,
+            connectedAt: Date.now()
+        }
+
+                        // Сообщить всем - что кто то открыл страницу
+                // Появится тост с id нового пользователя, что только подсоединился
+        // allSocketServer.emit('new_user_connection',
+        //     {socket_id: oneUserSocket.id}
+        // )
+        allSocketServer.emit('new_user_connection', newUser)
 
 
-        // Сообщить всем - что кто то открыл страницу
-        // Появится тост с id нового пользователя, что только подсоединился
-        allSocketServer.emit('new_user_connection', {socket_id: oneUserSocket.id})
-
-
-        // Появится тост с текстом нового сообщения, что записывается в инпут
+                        // Обработка сообщения от клиента - его пересылка всем, кто подключен
+                // Появится тост с текстом нового сообщения, что записывается в инпут
         oneUserSocket.on('new_message', (data) =>{
-            allSocketServer.emit('new_message', data)
+
+            const msg = {
+                        name: oneUserSocket.name,
+                        msg: data,
+                        createdAt: Date.now()
+                    }
+
+            allSocketServer.emit('new_message', msg);
         })
 
+
+                        // Смена имени
+
+        oneUserSocket.on('new_name_user', (data) =>{
+
+            const oldNameUser = oneUserSocket.name;
+            const newNameUser = data;
+            oneUserSocket.name = newNameUser;
+
+            const msg = {
+                oldNameUser: oldNameUser,
+                newNameUser: newNameUser,
+                createdAt: Date.now()
+            }
+
+            allSocketServer.emit('new_name_user', msg);
+        })
 
         //
         // // Обработка сообщения от клиента - его пересылка всем, кто подключен
@@ -120,23 +147,26 @@ allSocketServer.on("connection",
         //     allSocketServer.emit('new_message_it', msg);
         // })
 
-        // Обработка отключения клиента
+                    // Обработка отключения клиента
         oneUserSocket.on("disconnect", () => {
             console.log(`User disconnected: ${oneUserSocket.id}`);
         });
 
-        // oneUserSocket.on('ping', (data) => {
-        //     console.log('--> ping from user '
-        //         + oneUserSocket.name
-        //         + ' ' + data)
-        // })
-    });
 
-// setInterval(() => {
-//     let d = Date.now()
-//     console.log('ping users -->: ' + d)
-//     allSocketServer.emit('ping', d);
-// }, 5000);
+                    // Временная метка в консоль через указанный интервал (входящий пинг)
+        oneUserSocket.on('ping', (data) => {
+            console.log('--> ping from user '
+                + oneUserSocket.name
+                + ' ' + data)
+        })
+    });
+//
+            // Временная метка в консоль через указанный интервал (исходящий пинг)
+setInterval(() => {
+    let d = Date.now()
+    console.log('ping users -->: ' + d)
+    allSocketServer.emit('ping', d);
+}, 5000);
 
 
 // Run socket server
